@@ -11,8 +11,8 @@ services:
     environment:
       - LLM_PROVIDER=ollama
       # Use host.docker.internal to reach the Ollama service on your Windows host
-      - OLLAMA_BASE_URL=http://localhost:11434
-      - DEFAULT_MODEL=llama3
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - DEFAULT_MODEL=llama3:latest
     # Removed depends_on: ollama
     networks:
       - lerka-network

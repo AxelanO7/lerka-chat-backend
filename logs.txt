@@ -1,0 +1,14 @@
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     172.24.0.1:55360 - "GET /docs HTTP/1.1" 200 OK
+INFO:     172.24.0.1:55360 - "GET /api/openapi.json HTTP/1.1" 200 OK
+INFO:     172.24.0.1:49978 - "POST /api/chat HTTP/1.1" 200 OK
+2026-04-07 05:26:24,839 [INFO] httpx: HTTP Request: POST http://host.docker.internal:11434/api/chat "HTTP/1.1 404 Not Found"
+2026-04-07 05:26:24,841 [ERROR] app.infrastructure.llm.ollama_provider: Ollama stream error: Client error '404 Not Found' for url 'http://host.docker.internal:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+2026-04-07 05:26:24,841 [ERROR] app.services.chat_service: Error in ChatService streaming: Client error '404 Not Found' for url 'http://host.docker.internal:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+2026-04-07 05:26:24,841 [ERROR] app.api.routes.chat: Streaming error: Client error '404 Not Found' for url 'http://host.docker.internal:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
