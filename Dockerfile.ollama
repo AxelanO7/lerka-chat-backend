@@ -1,4 +1,5 @@
 FROM ollama/ollama
+ENV OLLAMA_HOST=0.0.0.0
 
 # Bake the model directly into the docker image.
 # We start the Ollama service in the background, wait for it to be ready, 

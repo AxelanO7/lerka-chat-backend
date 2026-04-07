@@ -10,23 +10,10 @@ services:
       - "8000:8000"
     environment:
       - LLM_PROVIDER=ollama
-      # Use the docker service name as hostname
-      - OLLAMA_BASE_URL=http://ollama:11434
+      # Use host.docker.internal to reach the Ollama service on your Windows host
+      - OLLAMA_BASE_URL=http://localhost:11434
       - DEFAULT_MODEL=llama3
-    depends_on:
-      - ollama
-    networks:
-      - lerka-network
-
-  ollama:
-    build:
-      context: .
-      dockerfile: Dockerfile.ollama
-    container_name: lerka-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
+    # Removed depends_on: ollama
     networks:
       - lerka-network
 
@@ -34,5 +21,4 @@ networks:
   lerka-network:
     driver: bridge
 
-volumes:
-  ollama_data:
+# Removed volumes: ollama_data:
