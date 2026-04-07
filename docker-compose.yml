@@ -13,19 +13,18 @@ services:
     # Removed depends_on: ollama
     networks:
       - lerka-network
-
-  ngrok:
-    image: ngrok/ngrok:latest
-    container_name: lerka-ngrok-aichat
-    ports:
-      - "4040:4040"
-    environment:
-      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN:-}
-    command: http api:8000
-    depends_on:
-      - api
-    networks:
-      - lerka-network
+  # ngrok:
+  #   image: ngrok/ngrok:latest
+  #   container_name: lerka-ngrok-aichat
+  #   ports:
+  #     - "4040:4040"
+  #   environment:
+  #     - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN:-}
+  #   command: http api:8000
+  #   depends_on:
+  #     - api
+  #   networks:
+  #     - lerka-network
 
 networks:
   lerka-network:
