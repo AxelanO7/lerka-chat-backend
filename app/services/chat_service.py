@@ -30,7 +30,12 @@ class ChatService:
         return messages
 
     async def process_chat_stream(self, request: ChatRequest) -> AsyncGenerator[str, None]:
-        model_to_use = request.model or settings.DEFAULT_MODEL
+        # Handle Swagger UI default "string" by using DEFAULT_MODEL instead
+        if request.model is None or request.model == "string" or request.model.strip() == "":
+            model_to_use = settings.DEFAULT_MODEL
+        else:
+            model_to_use = request.model
+            
         temperature_to_use = request.temperature if request.temperature is not None else 0.7
         
         messages = await self._prepare_messages(request.messages, request.use_rag)

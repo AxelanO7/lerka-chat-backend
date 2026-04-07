@@ -14,6 +14,7 @@ async def create_chat_completion(
     request: ChatRequest,
     chat_service: ChatService = Depends(get_chat_service)
 ):
+    logger.info(f"Incoming Request Model: {request.model}, Use RAG: {request.use_rag}, Messages: {request.messages}")
     async def event_generator():
         try:
             async for chunk in chat_service.process_chat_stream(request):
