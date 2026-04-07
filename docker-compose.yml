@@ -8,12 +8,22 @@ services:
     container_name: lerka-backend
     ports:
       - "8000:8000"
-    environment:
-      - LLM_PROVIDER=ollama
-      # Use host.docker.internal to reach the Ollama service on your Windows host
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      - DEFAULT_MODEL=llama3:latest
+    env_file:
+      - .env
     # Removed depends_on: ollama
+    networks:
+      - lerka-network
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: lerka-ngrok-aichat
+    ports:
+      - "4040:4040"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN:-}
+    command: http api:8000
+    depends_on:
+      - api
     networks:
       - lerka-network
 

@@ -18,12 +18,12 @@ async def create_chat_completion(
     async def event_generator():
         try:
             async for chunk in chat_service.process_chat_stream(request):
-                yield f"data: {chunk}  "
+                yield f"data: {chunk}\n\n"
         except Exception as e:
             logger.error(f"Streaming error: {e}")
-            yield f"data: [ERROR] {str(e)}  "
+            yield f"data: [ERROR] {str(e)}\n\n"
         finally:
-            yield "data: [DONE]  "
+            yield "data: [DONE]\n\n"
 
     return StreamingResponse(
         event_generator(),
