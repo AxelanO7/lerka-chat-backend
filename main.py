@@ -10,10 +10,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(na
 logger = logging.getLogger(__name__)
 
 def create_app() -> FastAPI:
+    is_prod = settings.ENVIRONMENT.lower() == "production"
+    
     app = FastAPI(
         title=settings.PROJECT_NAME,
         version=settings.VERSION,
-        openapi_url=f"{settings.API_V1_STR}/openapi.json"
+        openapi_url=f"{settings.API_V1_STR}/openapi.json" if not is_prod else None,
+        docs_url="/docs" if not is_prod else None,
+        redoc_url="/redoc" if not is_prod else None
     )
 
     app.add_middleware(

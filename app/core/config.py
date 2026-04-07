@@ -4,6 +4,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "AI Chat System API"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"
+    ENVIRONMENT: str = "development"
     
     LLM_PROVIDER: str = "ollama"  
     OLLAMA_BASE_URL: str = "http://localhost:11434"
