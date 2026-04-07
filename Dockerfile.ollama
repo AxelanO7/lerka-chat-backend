@@ -1,0 +1,6 @@
+FROM ollama/ollama
+
+# Bake the model directly into the docker image.
+# We start the Ollama service in the background, wait for it to be ready, 
+# then pull the llama3 model. Once pulled, it is saved in the image layers.
+RUN ollama serve & sleep 5 && ollama pull llama3
