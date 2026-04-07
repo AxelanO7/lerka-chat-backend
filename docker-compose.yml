@@ -6,28 +6,26 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: lerka-backend
-    ports:
-      - "8000:8000"
     env_file:
       - .env
-    # Removed depends_on: ollama
+    depends_on:
+      - ollama
     networks:
       - lerka-network
-  # ngrok:
-  #   image: ngrok/ngrok:latest
-  #   container_name: lerka-ngrok-aichat
-  #   ports:
-  #     - "4040:4040"
-  #   environment:
-  #     - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN:-}
-  #   command: http api:8000
-  #   depends_on:
-  #     - api
-  #   networks:
-  #     - lerka-network
+
+  ollama:
+    build:
+      context: .
+      dockerfile: Dockerfile.ollama
+    container_name: lerka-ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - lerka-network
 
 networks:
   lerka-network:
     driver: bridge
 
-# Removed volumes: ollama_data:
+volumes:
+  ollama_data:

@@ -31,7 +31,7 @@ class OllamaProvider(LLMProvider):
         }
         
         try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
+            async with httpx.AsyncClient(timeout=settings.OLLAMA_TIMEOUT) as client:
                 async with client.stream("POST", url, json=payload) as response:
                     response.raise_for_status()
                     async for line in response.aiter_lines():
@@ -62,7 +62,7 @@ class OllamaProvider(LLMProvider):
         }
         
         try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
+            async with httpx.AsyncClient(timeout=settings.OLLAMA_TIMEOUT) as client:
                 response = await client.post(url, json=payload)
                 response.raise_for_status()
                 data = response.json()
