@@ -8,4 +8,4 @@ class EmbeddingProvider(ABC):
 
     @abstractmethod
     async def embed_texts(self, texts: List[str]) -> List[List[float]]:
-        pass\n
+        pass 

@@ -22,8 +22,8 @@ class ChatService:
         if last_message.role == "user":
             context = await self.rag_service.retrieve_context(last_message.content)
             if context:
-                context_str = "\n\n".join(context)
-                augmented_content = f"Context information:\n{context_str}\n\nBased on the above context, please answer the question: {last_message.content}"
+                context_str = "  ".join(context)
+                augmented_content = f"Context information: {context_str}  Based on the above context, please answer the question: {last_message.content}"
                 augmented_messages = messages[:-1] + [Message(role="user", content=augmented_content)]
                 return augmented_messages
                 
@@ -44,4 +44,4 @@ class ChatService:
                 yield chunk
         except Exception as e:
             logger.error(f"Error in ChatService streaming: {e}")
-            raise\n
+            raise 

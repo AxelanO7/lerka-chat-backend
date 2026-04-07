@@ -13,4 +13,4 @@ class VectorStore(ABC):
 
     @abstractmethod
     async def search(self, query_embedding: List[float], top_k: int = 5) -> List[Document]:
-        pass\n
+        pass 

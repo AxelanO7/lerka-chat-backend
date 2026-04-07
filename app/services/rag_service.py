@@ -9,4 +9,4 @@ class RAGService:
         
     async def retrieve_context(self, query: str) -> List[str]:
         # Stub for context retrieval -> will be integrated with vectorstore later
-        return []\n
+        return [] 

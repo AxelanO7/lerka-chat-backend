@@ -19,4 +19,4 @@ class LLMProvider(ABC):
         model: str, 
         temperature: float
     ) -> str:
-        pass\n
+        pass 

@@ -69,4 +69,4 @@ class OllamaProvider(LLMProvider):
                 return data.get("message", {}).get("content", "")
         except Exception as e:
             logger.error(f"Ollama error: {e}")
-            raise\n
+            raise 

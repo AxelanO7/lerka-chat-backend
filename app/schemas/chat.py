@@ -9,4 +9,4 @@ class ChatRequest(BaseModel):
     use_rag: bool = Field(False, description="Enable RAG context retrieval")
 
 class ChatResponse(BaseModel):
-    message: Message\n
+    message: Message 
