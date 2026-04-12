@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: lerka-backend
+    container_name: lerka-aichat-backend
     ports:
       - "127.0.0.1:3013:8000"
     env_file:

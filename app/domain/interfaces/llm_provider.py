@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import AsyncGenerator, List
+from typing import AsyncGenerator, List, Callable, Optional
 from app.domain.entities.message import Message
 
 class LLMProvider(ABC):
@@ -8,7 +8,9 @@ class LLMProvider(ABC):
         self, 
         messages: List[Message], 
         model: str, 
-        temperature: float
+        temperature: float,
+        budget_limit: Optional[int] = None,
+        on_usage_callback: Optional[Callable[[int, int], None]] = None
     ) -> AsyncGenerator[str, None]:
         pass
 
@@ -17,6 +19,8 @@ class LLMProvider(ABC):
         self, 
         messages: List[Message], 
         model: str, 
-        temperature: float
+        temperature: float,
+        budget_limit: Optional[int] = None,
+        on_usage_callback: Optional[Callable[[int, int], None]] = None
     ) -> str:
         pass 

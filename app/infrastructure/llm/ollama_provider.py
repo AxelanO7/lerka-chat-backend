@@ -1,4 +1,4 @@
-from typing import AsyncGenerator, List
+from typing import AsyncGenerator, List, Callable, Optional
 import logging
 import httpx
 import json
@@ -17,7 +17,9 @@ class OllamaProvider(LLMProvider):
         self, 
         messages: List[Message], 
         model: str, 
-        temperature: float
+        temperature: float,
+        budget_limit: Optional[int] = None,
+        on_usage_callback: Optional[Callable[[int, int], None]] = None
     ) -> AsyncGenerator[str, None]:
         url = f"{self.base_url}/api/chat"
         formatted_messages = [{"role": msg.role, "content": msg.content} for msg in messages]
@@ -30,6 +32,11 @@ class OllamaProvider(LLMProvider):
             }
         }
         
+        if budget_limit is not None:
+            # We enforce that num_predict limit is maxed at budget_limit
+            # Ollama uses num_predict for Max Tokens
+            payload["options"]["num_predict"] = budget_limit
+        
         try:
             async with httpx.AsyncClient(timeout=settings.OLLAMA_TIMEOUT) as client:
                 async with client.stream("POST", url, json=payload) as response:
@@ -40,6 +47,12 @@ class OllamaProvider(LLMProvider):
                         data = json.loads(line)
                         if "message" in data and "content" in data["message"]:
                             yield data["message"]["content"]
+                            
+                        if data.get("done") is True and on_usage_callback:
+                            prompt_eval = data.get("prompt_eval_count", 0)
+                            eval_count = data.get("eval_count", 0)
+                            on_usage_callback(prompt_eval, eval_count)
+                            
         except Exception as e:
             logger.error(f"Ollama stream error: {e}")
             raise
@@ -48,7 +61,9 @@ class OllamaProvider(LLMProvider):
         self, 
         messages: List[Message], 
         model: str, 
-        temperature: float
+        temperature: float,
+        budget_limit: Optional[int] = None,
+        on_usage_callback: Optional[Callable[[int, int], None]] = None
     ) -> str:
         url = f"{self.base_url}/api/chat"
         formatted_messages = [{"role": msg.role, "content": msg.content} for msg in messages]
@@ -61,11 +76,20 @@ class OllamaProvider(LLMProvider):
             }
         }
         
+        if budget_limit is not None:
+            payload["options"]["num_predict"] = budget_limit
+        
         try:
             async with httpx.AsyncClient(timeout=settings.OLLAMA_TIMEOUT) as client:
                 response = await client.post(url, json=payload)
                 response.raise_for_status()
                 data = response.json()
+                
+                if data.get("done") is True and on_usage_callback:
+                    prompt_eval = data.get("prompt_eval_count", 0)
+                    eval_count = data.get("eval_count", 0)
+                    on_usage_callback(prompt_eval, eval_count)
+                    
                 return data.get("message", {}).get("content", "")
         except Exception as e:
             logger.error(f"Ollama error: {e}")
