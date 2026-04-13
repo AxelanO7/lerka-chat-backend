@@ -56,6 +56,12 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
+**Run Tests:**
+---Note running in powersheel
+```bash
+$env:PYTHONPATH = "."; pytest
+```
+
 ## Endpoints
 
 ### `POST /api/chat`
