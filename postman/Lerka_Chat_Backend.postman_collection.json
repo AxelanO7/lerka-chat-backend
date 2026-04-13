@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "eb345678-aaaa-bbbb-cccc-123456789abc",
     "name": "Lerka Chat Backend",
-    "description": "API collection for Lerka Chat Backend configured for Ollama.",
+    "description": "API collection for Lerka Chat Backend configured for OpenRouter/Ollama.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -10,10 +10,15 @@
       "name": "Chat Completion (Stream)",
       "request": {
         "method": "POST",
-        "header": [],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a helpful assistant.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"What is clean architecture?\"\n    }\n  ],\n  \"model\": \"llama3\",\n  \"temperature\": 0.7,\n  \"use_rag\": false\n}",
+          "raw": "{\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"hello dear!\"\n    }\n  ],\n  \"model\": \"meta-llama/llama-3.1-8b-instruct\",\n  \"temperature\": 0.7,\n  \"use_rag\": false\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -21,15 +26,56 @@
           }
         },
         "url": {
-          "raw": "http://localhost:8000/api/chat",
+          "raw": "http://localhost:3013/api/chat",
           "protocol": "http",
           "host": [
             "localhost"
           ],
-          "port": "8000",
+          "port": "3013",
           "path": [
             "api",
             "chat"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Token Budgets",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3013/api/budget",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3013",
+          "path": [
+            "api",
+            "budget"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Reset Token Budgets",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3013/api/budget/reset",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3013",
+          "path": [
+            "api",
+            "budget",
+            "reset"
           ]
         }
       },

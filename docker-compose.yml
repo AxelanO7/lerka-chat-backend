@@ -13,6 +13,27 @@ services:
     networks:
       - lerka-network
 
-networks:
-  lerka-network:
-    driver: bridge
+# ===================================
+# NGROK TUNNELING
+# ===================================
+# If want to use, add NGROK_AUTHTOKEN in .env file
+#####################################################
+#   ngrok:
+#     image: ngrok/ngrok:latest
+#     container_name: lerka-ngrok-aichat
+#     restart: unless-stopped
+#     ports:
+#       - "4040:4040"
+#     environment:
+#       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+#     command:
+#       - "http"
+#       - "api:8000"
+#     networks:
+#       - lerka-network
+#     depends_on:
+#       - api
+
+# networks:
+#   lerka-network:
+#     driver: bridge

@@ -19,9 +19,9 @@ class Settings(BaseSettings):
     BUDGET_GEMMA4: int = 100000
     
     # OpenRouter Models Budgets
-    BUDGET_OR_LLAMA_3_1_8B: int = 0
-    BUDGET_OR_CLAUDE_3_HAIKU: int = 100
-    BUDGET_OR_GPT_4O_MINI: int = 50
+    BUDGET_OR_LLAMA_3_1_8B: int = 10000
+    BUDGET_OR_CLAUDE_3_HAIKU: int = 5000
+    BUDGET_OR_GPT_4O_MINI: int = 10000
     
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore")
 
