@@ -12,6 +12,22 @@ services:
       - .env
     networks:
       - lerka-network
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:latest
+    container_name: lerka-mongodb
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USER:-root}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD:-example}
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - lerka-network
 
 # ===================================
 # NGROK TUNNELING
@@ -34,6 +50,9 @@ services:
 #     depends_on:
 #       - api
 
-# networks:
-#   lerka-network:
-#     driver: bridge
+volumes:
+  mongodb_data:
+
+networks:
+  lerka-network:
+    driver: bridge

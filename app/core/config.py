@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     BUDGET_OR_CLAUDE_3_HAIKU: int = 5000
     BUDGET_OR_GPT_4O_MINI: int = 10000
     
+    # MongoDB Settings
+    MONGODB_URL: str = "mongodb://root:example@localhost:27017/"
+    MONGODB_DATABASE: str = "lerka_chat"
+    
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore")
 
 settings = Settings()
