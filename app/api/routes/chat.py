@@ -1,31 +1,18 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
-import logging
 
 from app.schemas.chat import ChatRequest
 from app.services.chat_service import ChatService
-from app.api.deps import get_chat_service
+from app.api.deps import verify_internal_gateway
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
 
-@router.post("")
-async def create_chat_completion(
-    request: ChatRequest,
-    chat_service: ChatService = Depends(get_chat_service)
-):
-    logger.info(f"Incoming Request Model: {request.model}, Use RAG: {request.use_rag}, Messages: {request.messages}")
-    async def event_generator():
-        try:
-            async for chunk in chat_service.process_chat_stream(request):
-                yield f"data: {chunk}\n\n"
-        except Exception as e:
-            logger.error(f"Streaming error: {e}")
-            yield f"data: [ERROR] {str(e)}\n\n"
-        finally:
-            yield "data: [DONE]\n\n"
-
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream"
-    ) 
+@router.post("/stream", dependencies=[Depends(verify_internal_gateway)])
+async def chat_stream(request: ChatRequest):
+    chat_service = ChatService()
+    generator = chat_service.stream_chat(
+        messages=request.messages,
+        model_id=request.model_id,
+        temperature=request.temperature
+    )
+    return StreamingResponse(generator, media_type="text/plain")
