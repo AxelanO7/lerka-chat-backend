@@ -36,7 +36,12 @@ class OllamaProvider(LLMProvider):
         try:
             async with httpx.AsyncClient(timeout=300.0) as client:
                 async with client.stream("POST", url, json=payload) as response:
-                    response.raise_for_status()
+                    if response.status_code != 200:
+                        error_detail = await response.aread()
+                        logger.error(f"Ollama error {response.status_code}: {error_detail.decode()}")
+                        yield f"Error from Ollama ({response.status_code}): {error_detail.decode()[:100]}"
+                        return
+
                     async for line in response.aiter_lines():
                         if not line:
                             continue
@@ -53,6 +58,6 @@ class OllamaProvider(LLMProvider):
                             
         except Exception as e:
             logger.error(f"Ollama stream error: {e}")
-            raise
+            yield f"Ollama Connection Error: {str(e)}"
         finally:
             yield f"__USAGE__ {{\"prompt_tokens\": {prompt_tokens}, \"completion_tokens\": {completion_tokens}}}"

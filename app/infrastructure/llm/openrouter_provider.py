@@ -26,7 +26,10 @@ class OpenRouterProvider(LLMProvider):
             "Content-Type": "application/json"
         }
         
-        formatted_messages = [{"role": msg.role, "content": msg.content} for msg in messages]
+        # Filter out empty messages to avoid OpenRouter 400 errors
+        valid_messages = [msg for msg in messages if msg.content.strip()]
+        formatted_messages = [{"role": msg.role, "content": msg.content} for msg in valid_messages]
+        
         payload = {
             "model": model_id,
             "messages": formatted_messages,
@@ -40,7 +43,12 @@ class OpenRouterProvider(LLMProvider):
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
                 async with client.stream("POST", url, headers=headers, json=payload) as response:
-                    response.raise_for_status()
+                    if response.status_code != 200:
+                        error_detail = await response.aread()
+                        logger.error(f"OpenRouter error {response.status_code}: {error_detail.decode()}")
+                        yield f"Error from OpenRouter ({response.status_code}): {error_detail.decode()[:100]}"
+                        return
+
                     async for line in response.aiter_lines():
                         if not line or not line.startswith("data: "):
                             continue
@@ -67,8 +75,11 @@ class OpenRouterProvider(LLMProvider):
                             logger.warning(f"Failed to decode JSON from stream: {data_str}")
                             continue
                             
+        except httpx.HTTPStatusError as e:
+            logger.error(f"OpenRouter HTTP error: {e}")
+            yield f"AI Service Error: {str(e)}"
         except Exception as e:
             logger.error(f"OpenRouter stream error: {e}")
-            raise
+            yield f"Connection Error: {str(e)}"
         finally:
-            yield f"__USAGE__ {{\"prompt_tokens\": {prompt_tokens}, \"completion_tokens\": {completion_tokens}}}"
+            yield f"__USAGE__ {{\"prompt_tokens\": {prompt_tokens}, \"completion_tokens\": {completion_tokens}}}"
