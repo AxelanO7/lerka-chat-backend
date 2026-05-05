@@ -38,7 +38,7 @@ jobs:
       - name: Poll deployment status
         run: |
           DEPLOYMENT_UUID="${{ steps.trigger.outputs.deployment_uuid }}"
-          MAX_ATTEMPTS=60
+          MAX_ATTEMPTS=120
           ATTEMPT=0
           SEEN_IN_PROGRESS=0
 
@@ -82,15 +82,22 @@ jobs:
             # Coolify removes the entry from the list once deployment completes.
             # If we saw in_progress and the entry is now gone, it finished successfully.
             if [ -z "$STATUS" ] && [ "$SEEN_IN_PROGRESS" = "1" ]; then
+              FINAL=$(curl -s --max-time 15 \
+                "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deployments/$DEPLOYMENT_UUID" \
+                -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}")
+              FINAL_LOGS=$(echo "$FINAL" | jq -r '.logs // empty' 2>/dev/null)
+              if [ -n "$FINAL_LOGS" ]; then
+                echo "$FINAL_LOGS" > /tmp/deployment_logs.json
+              fi
               echo "Deployment succeeded (entry removed from queue — completed)."
               echo "Deployment URL: ${{ secrets.COOLIFY_BASE_URL }}/project/deployments/$DEPLOYMENT_UUID"
               exit 0
             fi
 
-            sleep 10
+            sleep 3
           done
 
-          echo "Deployment timed out after $((MAX_ATTEMPTS * 10)) seconds."
+          echo "Deployment timed out after $((MAX_ATTEMPTS * 3)) seconds."
           echo "Deployment URL: ${{ secrets.COOLIFY_BASE_URL }}/project/deployments/$DEPLOYMENT_UUID"
           exit 1
 
