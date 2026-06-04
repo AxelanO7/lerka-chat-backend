@@ -1,0 +1,117 @@
+name: Deploy to Coolify
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Coolify deployment
+        id: trigger
+        run: |
+          RESPONSE=$(curl -s --max-time 30 -X POST \
+            "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_APP_UUID }}&force=false" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+            -H "Content-Type: application/json")
+
+          echo "Trigger response: $RESPONSE"
+
+          DEPLOYMENT_UUID=$(echo "$RESPONSE" | jq -r '.deployments[0].deployment_uuid // empty')
+
+          echo "Extracted DEPLOYMENT_UUID: $DEPLOYMENT_UUID"
+
+          if [ -z "$DEPLOYMENT_UUID" ]; then
+            echo "Failed to extract deployment_uuid from response"
+            exit 1
+          fi
+
+          echo "deployment_uuid=$DEPLOYMENT_UUID" >> $GITHUB_OUTPUT
+
+      - name: Poll deployment status
+        run: |
+          DEPLOYMENT_UUID="${{ steps.trigger.outputs.deployment_uuid }}"
+          MAX_ATTEMPTS=120
+          ATTEMPT=0
+          SEEN_IN_PROGRESS=0
+
+          echo "Polling deployment $DEPLOYMENT_UUID..."
+
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+
+            RESPONSE=$(curl -s --max-time 15 \
+              "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deployments" \
+              -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}")
+
+            STATUS=$(echo "$RESPONSE" | jq -r --arg uuid "$DEPLOYMENT_UUID" \
+              '.[] | select(.deployment_uuid == $uuid) | .status // empty')
+
+            # Save logs to file while entry still exists in the list
+            LOGS=$(echo "$RESPONSE" | jq -r --arg uuid "$DEPLOYMENT_UUID" \
+              '.[] | select(.deployment_uuid == $uuid) | .logs // empty')
+            if [ -n "$LOGS" ]; then
+              echo "$LOGS" > /tmp/deployment_logs.json
+            fi
+
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS — status: ${STATUS:-gone}"
+
+            if [ "$STATUS" = "in_progress" ]; then
+              SEEN_IN_PROGRESS=1
+            fi
+
+            if [ "$STATUS" = "finished" ]; then
+              echo "Deployment succeeded."
+              echo "Deployment URL: ${{ secrets.COOLIFY_BASE_URL }}/project/deployments/$DEPLOYMENT_UUID"
+              exit 0
+            fi
+
+            if [ "$STATUS" = "failed" ] || [ "$STATUS" = "cancelled" ]; then
+              echo "Deployment failed (status: $STATUS)."
+              echo "Deployment URL: ${{ secrets.COOLIFY_BASE_URL }}/project/deployments/$DEPLOYMENT_UUID"
+              exit 1
+            fi
+
+            # Coolify removes the entry from the list once deployment completes.
+            # If we saw in_progress and the entry is now gone, it finished successfully.
+            if [ -z "$STATUS" ] && [ "$SEEN_IN_PROGRESS" = "1" ]; then
+              FINAL=$(curl -s --max-time 15 \
+                "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deployments/$DEPLOYMENT_UUID" \
+                -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}")
+              FINAL_LOGS=$(echo "$FINAL" | jq -r '.logs // empty' 2>/dev/null)
+              if [ -n "$FINAL_LOGS" ]; then
+                echo "$FINAL_LOGS" > /tmp/deployment_logs.json
+              fi
+              echo "Deployment succeeded (entry removed from queue — completed)."
+              echo "Deployment URL: ${{ secrets.COOLIFY_BASE_URL }}/project/deployments/$DEPLOYMENT_UUID"
+              exit 0
+            fi
+
+            sleep 3
+          done
+
+          echo "Deployment timed out after $((MAX_ATTEMPTS * 3)) seconds."
+          echo "Deployment URL: ${{ secrets.COOLIFY_BASE_URL }}/project/deployments/$DEPLOYMENT_UUID"
+          exit 1
+
+      - name: Print deployment logs
+        if: always()
+        run: |
+          echo "=============================="
+          echo "=== Coolify Deployment Logs ==="
+          echo "=============================="
+
+          if [ ! -f /tmp/deployment_logs.json ]; then
+            echo "No logs captured."
+            exit 0
+          fi
+
+          # logs field is a JSON array of {output, type, timestamp} objects — print each output line
+          cat /tmp/deployment_logs.json | jq -r '.[] | .output' 2>/dev/null || cat /tmp/deployment_logs.json
