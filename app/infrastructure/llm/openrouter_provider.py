@@ -18,11 +18,11 @@ class OpenRouterProvider(LLMProvider):
         Determines the fallback order: primary -> alternative -> nano-class.
         Primary: model_id
         Alternative: google/gemma-4-26b-a4b-it
-        Nano: anthropic/claude-3-haiku
+        Nano: google/gemma-4-26b-a4b-it
         """
         chain = [model_id]
         alternative = "google/gemma-4-26b-a4b-it"
-        nano = "anthropic/claude-3-haiku"
+        nano = "google/gemma-4-26b-a4b-it"
         
         if alternative not in chain:
             chain.append(alternative)
