@@ -49,9 +49,9 @@ class Settings(BaseSettings):
         "openai/gpt-oss-120b:free",
         "google/gemma-4-31b-it:free",
         "google/gemma-4-26b-a4b-it:free",
-        "z-ai/glm-4.5-air:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
         "nvidia/nemotron-nano-9b-v2:free",
-        "moonshotai/kimi-k2.6:free"
+        "poolside/laguna-m.1:free"
     ]
     
     # Showcases
