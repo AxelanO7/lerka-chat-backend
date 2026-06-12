@@ -5,29 +5,46 @@ services:
     build: .
     container_name: lerka-chat-backend
     ports:
-      - "127.0.0.1:3016:8000"
+      - "8000:8000"
     env_file:
       - .env
     networks:
       - lerka-network
     depends_on:
-      - mongodb
+      - db
+      - redis
     restart: unless-stopped
 
-  mongodb:
-    image: mongo:latest
-    container_name: lerka-mongodb
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: lerka-postgres
     restart: always
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USER:-root}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD:-example}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-lerka}
+    ports:
+      - "5432:5432"
     volumes:
-      - mongodb_data:/data/db
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - lerka-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: lerka-redis
+    restart: always
+    command: redis-server --maxmemory 1gb --maxmemory-policy volatile-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
     networks:
       - lerka-network
 
 volumes:
-  mongodb_data:
+  postgres_data:
+  redis_data:
 
 networks:
   lerka-network:
