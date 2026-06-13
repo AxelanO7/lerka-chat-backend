@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str = ""
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     
-    INTERNAL_GATEWAY_SECRET: str = "your-internal-gateway-secret-here"
+    INTERNAL_SECRET: str = "your-internal-gateway-secret-here"
     
     # DEV_MODE: refuse to boot if DEV_MODE=true
     DEV_MODE: bool = False
