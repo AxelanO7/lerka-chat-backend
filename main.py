@@ -84,10 +84,15 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing resources on startup...")
 
     # 2. Initialize Postgres Connection Pool
-    postgres_dsn = f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}"
+    # Use kwargs instead of DSN to avoid URL-parsing issues with special chars in password (@, #)
     try:
         semantic_cache.db_pool = await asyncpg.create_pool(
-            dsn=postgres_dsn,
+            host=settings.POSTGRES_HOST,
+            port=settings.POSTGRES_PORT,
+            user=settings.POSTGRES_USER,
+            password=settings.POSTGRES_PASSWORD,
+            database=settings.POSTGRES_DB,
+            ssl="require",
             min_size=2,
             max_size=10
         )
