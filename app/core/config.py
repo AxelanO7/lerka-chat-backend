@@ -40,9 +40,18 @@ class Settings(BaseSettings):
     APP_DAILY_SPEND_CAP_USD: float = 25.0
     
     # Models
-    FREE_FORM_LIVE_MODEL: str = "openai/gpt-oss-20b"
-    COMPARE_LIVE_MODELS: List[str] = ["openai/gpt-oss-20b", "google/gemma-4-26b-a4b-it"]
-    JUDGE_MODEL: str = "google/gemma-4-26b-a4b-it"
+    FREE_FORM_LIVE_MODEL: str = "deepseek/deepseek-v4-flash"
+    COMPARE_LIVE_MODELS: List[str] = ["deepseek/deepseek-v4-flash", "google/gemini-2.5-flash-lite"]
+    JUDGE_MODEL: str = "google/gemini-2.5-flash-lite"
+    
+    PAID_MODELS: List[str] = [
+        "deepseek/deepseek-v4-flash",
+        "google/gemini-2.5-flash-lite",
+        "qwen/qwen3.7-plus",
+        "moonshotai/kimi-k2.6",
+        "minimax/minimax-m3",
+    ]
+    FREE_MODELS: List[str] = ["gemma3:4b", "llama3.2:3b"]
     
     SHOWCASE_FREE_MODELS: List[str] = [
         "openai/gpt-oss-20b:free",

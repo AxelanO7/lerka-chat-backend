@@ -47,6 +47,20 @@ async def chat_stream(request: ChatRequest):
             yield f"__USAGE__ {json.dumps(cached_val.get('usage', {'prompt_tokens': 0, 'completion_tokens': 0}))}"
         return StreamingResponse(cached_generator(), media_type="text/plain")
 
+    if request.use_rag and request.user_id:
+        from app.infrastructure.rag.retrieval import retrieve
+        try:
+            chunks = await retrieve(prompt, request.user_id, request.session_id)
+            if chunks:
+                context_str = "\n".join(chunks)
+                rag_message = ChatMessage(
+                    role="system",
+                    content=f"Use the following retrieved context to answer the user's prompt if it is relevant:\n{context_str}"
+                )
+                request.messages.insert(0, rag_message)
+        except Exception as e:
+            logger.error(f"RAG retrieval error: {e}")
+
     # 3. Stream from Provider
     async def provider_generator():
         provider = get_llm_provider(request.model_id)
@@ -141,10 +155,23 @@ async def chat_compare(request: CompareRequest):
         models = settings.COMPARE_LIVE_MODELS
         queue = asyncio.Queue()
         
+        chunks = []
+        if request.use_rag and request.user_id:
+            from app.infrastructure.rag.retrieval import retrieve
+            try:
+                chunks = await retrieve(prompt, request.user_id, request.session_id)
+            except Exception as e:
+                logger.error(f"RAG retrieval error in compare: {e}")
+
         async def run_single_model(m_id: str):
             provider = get_llm_provider(m_id)
+            system_content = "You are a helpful assistant. Answer in the same language as the user."
+            if chunks:
+                context_str = "\n".join(chunks)
+                system_content += f"\nUse the following retrieved context to answer the user's prompt if it is relevant:\n{context_str}"
+
             messages = [
-                ChatMessage(role="system", content="You are a helpful assistant. Answer in the same language as the user."),
+                ChatMessage(role="system", content=system_content),
                 ChatMessage(role="user", content=prompt)
             ]
             accumulated = []

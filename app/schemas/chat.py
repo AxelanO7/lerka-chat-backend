@@ -9,9 +9,15 @@ class ChatRequest(BaseModel):
     messages: List[ChatMessage]
     model_id: str = Field(..., description="e.g., 'openai/gpt-4o-mini' or 'llama3.1'")
     temperature: float = 0.7
+    user_id: Optional[str] = None
+    session_id: Optional[str] = None
+    use_rag: bool = True
 
 class CompareRequest(BaseModel):
     prompt: Optional[str] = None
     messages: Optional[List[ChatMessage]] = None
     temperature: float = 0.7
     is_curated: bool = False
+    user_id: Optional[str] = None
+    session_id: Optional[str] = None
+    use_rag: bool = True
