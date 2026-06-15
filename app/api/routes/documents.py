@@ -80,10 +80,11 @@ async def upload_document(
         try:
             for chunk in chunks:
                 vector = await embedding_service.get_embedding(chunk)
+                vector_str = f"[{','.join(map(str, vector))}]"
                 await conn.execute(
                     """INSERT INTO document_chunks (source_id, user_id, session_id, chunk_text, embedding, kb_scope)
-                       VALUES ($1, $2, $3, $4, $5, 'personal')""",
-                    doc_id, user_id, session_id, chunk, vector
+                       VALUES ($1, $2, $3, $4, $5::vector, 'personal')""",
+                    doc_id, user_id, session_id, chunk, vector_str
                 )
             
             await conn.execute("UPDATE document_sources SET status = 'completed' WHERE id = $1", doc_id)

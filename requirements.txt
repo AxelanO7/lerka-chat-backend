@@ -11,3 +11,4 @@ redis>=5.0.0
 pgvector>=0.2.0
 pypdf>=4.0.0
 docx2txt>=0.8
+python-multipart>=0.0.9
