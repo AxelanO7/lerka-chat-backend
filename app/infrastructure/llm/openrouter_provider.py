@@ -14,20 +14,11 @@ class OpenRouterProvider(LLMProvider):
         self.api_key = settings.OPENROUTER_API_KEY
 
     def get_fallback_chain(self, model_id: str) -> List[str]:
-        """
-        Determines the fallback order: primary -> alternative -> nano-class.
-        Primary: model_id
-        Alternative: google/gemma-4-26b-a4b-it
-        Nano: deepseek/deepseek-chat
-        """
         chain = [model_id]
-        alternative = "google/gemma-4-26b-a4b-it"
-        nano = "deepseek/deepseek-chat"
-        
-        if alternative not in chain:
-            chain.append(alternative)
-        if nano not in chain:
-            chain.append(nano)
+        # Fallback to DeepSeek V3 free, then DeepSeek chat
+        for fallback in ["deepseek/deepseek-v3-base:free", "deepseek/deepseek-chat"]:
+            if fallback not in chain:
+                chain.append(fallback)
         return chain
 
     async def generate_stream(
@@ -66,14 +57,25 @@ class OpenRouterProvider(LLMProvider):
         completion_tokens = 0
 
         for current_model in fallback_chain:
+            model_messages = [msg.copy() for msg in stable_messages]
+            if current_model.startswith("anthropic/") and len(model_messages) > 0:
+                model_messages[0]["content"] = [
+                    {
+                        "type": "text",
+                        "text": model_messages[0]["content"],
+                        "cache_control": {"type": "ephemeral"}
+                    }
+                ]
+
             payload = {
                 "model": current_model,
-                "messages": stable_messages,
+                "messages": model_messages,
                 "stream": True,
                 "temperature": temperature,
                 "max_tokens": 1024,
                 "provider": {
-                    "allow_fallbacks": False
+                    "allow_fallbacks": False,
+                    "order": ["Anthropic"] if current_model.startswith("anthropic/") else None
                 }
             }
             
