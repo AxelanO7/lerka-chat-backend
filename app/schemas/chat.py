@@ -16,6 +16,7 @@ class ChatRequest(BaseModel):
 class CompareRequest(BaseModel):
     prompt: Optional[str] = None
     messages: Optional[List[ChatMessage]] = None
+    models: Optional[List[str]] = None  # Frontend-selected model IDs
     temperature: float = 0.7
     is_curated: bool = False
     user_id: Optional[str] = None

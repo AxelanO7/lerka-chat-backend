@@ -152,7 +152,11 @@ async def chat_compare(request: CompareRequest):
 
     # 3. Parallel Execution using gather + async queue
     async def compare_stream_generator():
-        models = settings.COMPARE_LIVE_MODELS
+        # Use the models selected upstream. The API gateway is the source of
+        # truth for tier/registry validation, so models arriving here are
+        # already authorized. Fall back to env defaults only when none provided.
+        requested = [m for m in (request.models or []) if isinstance(m, str) and m.strip()]
+        models = requested if len(requested) >= 2 else settings.COMPARE_LIVE_MODELS
         queue = asyncio.Queue()
         
         chunks = []
@@ -165,27 +169,35 @@ async def chat_compare(request: CompareRequest):
 
         async def run_single_model(m_id: str):
             provider = get_llm_provider(m_id)
-            system_content = "You are a helpful assistant. Answer in the same language as the user."
+            system_content = (
+                "You are a helpful assistant. Answer in the same language as the user. "
+                "Be concise and direct. Answer briefly unless the user asks for detail."
+            )
             if chunks:
                 context_str = "\n".join(chunks)
-                system_content += f"\nUse the following retrieved context to answer the user's prompt if it is relevant:\n{context_str}"
+                system_content += f"\nUse the following retrieved context if relevant:\n{context_str}"
 
             messages = [
                 ChatMessage(role="system", content=system_content),
                 ChatMessage(role="user", content=prompt)
             ]
             accumulated = []
-            try:
+
+            async def _run():
                 async for chunk in provider.generate_stream(messages, m_id, request.temperature):
                     if chunk.startswith("__USAGE__"):
                         continue
                     accumulated.append(chunk)
                     await queue.put({"model": m_id, "text": chunk})
+
+            try:
+                await asyncio.wait_for(_run(), timeout=30.0)
+            except asyncio.TimeoutError:
+                logger.warning(f"Model {m_id} timed out after 30s")
+                await queue.put({"model": m_id, "text": "\n[Model timed out]"})
             except Exception as e:
                 logger.error(f"Error in model {m_id}: {e}")
-                err_msg = f"\n[Model Error: {str(e)}]"
-                accumulated.append(err_msg)
-                await queue.put({"model": m_id, "text": err_msg})
+                await queue.put({"model": m_id, "text": f"\n[Model Error: {str(e)}]"})
             finally:
                 await queue.put({"model": m_id, "done": True, "full_text": "".join(accumulated)})
 
@@ -204,15 +216,29 @@ async def chat_compare(request: CompareRequest):
 
         # 4. Judge summary synthesis
         judge_model = settings.JUDGE_MODEL
-        judge_prompt = (
-            "Combine and summarize the AI model responses below. Be extremely concise, direct, and on-point. "
-            "Provide a single unified best answer, and provide a clear text explanation of the reasoning so it's clear how the answer was obtained.\n\n"
+        judge_system = (
+            "You are Lerka, a synthesis judge. Multiple AI models have answered the same user question. "
+            "Your job is not to average them. Let them challenge each other implicitly, identify disagreement, "
+            "remove hallucinations, and produce one short best answer.\n\n"
+            "Rules:\n"
+            "- Use the same language as the user.\n"
+            "- Start with the direct answer first.\n"
+            "- Be concise and clear.\n"
+            "- If the models disagree, briefly mention it in one short sentence.\n"
+            "- Extract the strongest shared conclusion.\n"
+            "- Use 2-4 bullets only if they improve clarity.\n"
+            "- Do not reveal chain-of-thought.\n"
+            "- Do not write a long model-by-model transcript.\n"
+            "- For simple questions, answer in 1-3 sentences only.\n"
+            "- The final answer should feel like: 'Many minds. One answer.'"
         )
+        judge_prompt = "Here are the model responses:\n\n"
         for model_id, text in responses.items():
-            judge_prompt += f"--- MODEL: {model_id} ---\n{text}\n\n"
+            judge_prompt += f"--- {model_id} ---\n{text}\n\n"
+        judge_prompt += "\nNow produce the final synthesized answer."
 
         judge_messages = [
-            ChatMessage(role="system", content="You are a helpful synthesis judge assistant. Be extremely concise and on-point."),
+            ChatMessage(role="system", content=judge_system),
             ChatMessage(role="user", content=judge_prompt)
         ]
         
