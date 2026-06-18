@@ -74,6 +74,23 @@ async def price_refresh_loop(redis_client: aioredis.Redis):
         await asyncio.sleep(24 * 3600)
         await fetch_and_cache_prices(redis_client)
 
+async def _warm_ollama_models():
+    """Send a tiny request to each local model so it is loaded into RAM before the
+    first real user message (avoids cold-start connection errors during the demo)."""
+    import httpx
+    base = settings.OLLAMA_BASE_URL.rstrip("/").replace("//localhost:", "//127.0.0.1:")
+    models = ["gemma3:4b", "llama3.2:latest"]
+    for model in models:
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                await client.post(
+                    f"{base}/api/chat",
+                    json={"model": model, "messages": [{"role": "user", "content": "hi"}], "stream": False},
+                )
+            logger.info(f"Warmed up Ollama model: {model}")
+        except Exception as e:
+            logger.warning(f"Could not warm up Ollama model {model}: {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 1. DEV_MODE Boot Assertion
@@ -140,6 +157,10 @@ async def lifespan(app: FastAPI):
     await fetch_and_cache_prices(redis_cache.control_redis)
     # Start background price refresh task
     refresh_task = asyncio.create_task(price_refresh_loop(redis_cache.control_redis))
+
+    # 6. Pre-warm local Ollama models so the FIRST user message isn't a cold start
+    #    (cold model load can briefly refuse parallel connections -> connection error).
+    asyncio.create_task(_warm_ollama_models())
 
     yield
 
